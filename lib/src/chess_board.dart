@@ -55,119 +55,122 @@ class _ChessBoardState extends State<ChessBoard> {
           height: widget.size,
           child: Stack(
             children: [
-              AspectRatio(
-                child: _getBoardImage(widget.boardColor),
-                aspectRatio: 1.0,
-              ),
-              AspectRatio(
-                aspectRatio: 1.0,
-                child: GridView.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 8),
-                  itemBuilder: (context, index) {
-                    var row = index ~/ 8;
-                    var column = index % 8;
-                    var boardRank = widget.boardOrientation == PlayerColor.black
-                        ? '${row + 1}'
-                        : '${(7 - row) + 1}';
-                    var boardFile = widget.boardOrientation == PlayerColor.white
-                        ? '${files[column]}'
-                        : '${files[7 - column]}';
+              Container(
+                  margin: EdgeInsets.only(top: 25),
+                  child: AspectRatio(
+                    child: _getBoardImage(widget.boardColor),
+                    aspectRatio: 1.0,
+                  )),
+              GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 8),
+                itemBuilder: (context, index) {
+                  var row = index ~/ 8;
+                  var column = index % 8;
+                  var boardRank = widget.boardOrientation == PlayerColor.black
+                      ? '${row + 1}'
+                      : '${(7 - row) + 1}';
+                  var boardFile = widget.boardOrientation == PlayerColor.white
+                      ? '${files[column]}'
+                      : '${files[7 - column]}';
 
-                    var squareName = '$boardFile$boardRank';
-                    var pieceOnSquare = game.get(squareName);
+                  var squareName = '$boardFile$boardRank';
+                  var pieceOnSquare = game.get(squareName);
 
-                    var piece = BoardPiece(
-                      squareName: squareName,
-                      game: game,
-                    );
+                  var piece = BoardPiece(
+                    squareName: squareName,
+                    game: game,
+                  );
 
-                    var draggable = game.get(squareName) != null
-                        ? Draggable<PieceMoveData>(
-                            child: piece,
-                            feedback: piece,
-                            childWhenDragging: SizedBox(),
-                            data: PieceMoveData(
-                              squareName: squareName,
-                              pieceType:
-                                  pieceOnSquare?.type.toUpperCase() ?? 'P',
-                              pieceColor: pieceOnSquare?.color ?? Color.WHITE,
-                            ),
-                          )
-                        : Container();
+                  var draggable = game.get(squareName) != null
+                      ? Draggable<PieceMoveData>(
+                          child: piece,
+                          feedback: piece,
+                          childWhenDragging: SizedBox(),
+                          data: PieceMoveData(
+                            squareName: squareName,
+                            pieceType: pieceOnSquare?.type.toUpperCase() ?? 'P',
+                            pieceColor: pieceOnSquare?.color ?? Color.WHITE,
+                          ),
+                        )
+                      : Container();
 
-                    var dragTarget =
-                        DragTarget<PieceMoveData>(builder: (context, list, _) {
-                      return draggable;
-                    }, onWillAccept: (pieceMoveData) {
-                      return widget.enableUserMoves ? true : false;
-                    }, onAccept: (PieceMoveData pieceMoveData) async {
-                      // A way to check if move occurred.
-                      Color moveColor = game.turn;
+                  var dragTarget =
+                      DragTarget<PieceMoveData>(builder: (context, list, _) {
+                    return draggable;
+                  }, onWillAccept: (pieceMoveData) {
+                    return widget.enableUserMoves ? true : false;
+                  }, onAccept: (PieceMoveData pieceMoveData) async {
+                    // A way to check if move occurred.
+                    Color moveColor = game.turn;
 
-                      if (pieceMoveData.pieceType == "P" &&
-                          ((pieceMoveData.squareName[1] == "7" &&
-                                  squareName[1] == "8" &&
-                                  pieceMoveData.pieceColor == Color.WHITE) ||
-                              (pieceMoveData.squareName[1] == "2" &&
-                                  squareName[1] == "1" &&
-                                  pieceMoveData.pieceColor == Color.BLACK))) {
-                        var val = await _promotionDialog(context);
+                    if (pieceMoveData.pieceType == "P" &&
+                        ((pieceMoveData.squareName[1] == "7" &&
+                                squareName[1] == "8" &&
+                                pieceMoveData.pieceColor == Color.WHITE) ||
+                            (pieceMoveData.squareName[1] == "2" &&
+                                squareName[1] == "1" &&
+                                pieceMoveData.pieceColor == Color.BLACK))) {
+                      var val = await _promotionDialog(context);
 
-                        if (val != null) {
-                          widget.controller.makeMoveWithPromotion(
-                            from: pieceMoveData.squareName,
-                            to: squareName,
-                            pieceToPromoteTo: val,
-                          );
-                        } else {
-                          return;
-                        }
-                      } else {
-                        widget.controller.makeMove(
+                      if (val != null) {
+                        widget.controller.makeMoveWithPromotion(
                           from: pieceMoveData.squareName,
                           to: squareName,
+                          pieceToPromoteTo: val,
                         );
-                      }
-
-                      if (game.turn != moveColor) {
-                        widget.onMove?.call();
                       } else {
-                        availableMovesCanBeShowed = true;
+                        return;
                       }
-                      selectedPieceMoveData = pieceMoveData;
-                    });
-                    return dragTarget;
-                  },
-                  itemCount: 64,
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                ),
+                    } else {
+                      widget.controller.makeMove(
+                        from: pieceMoveData.squareName,
+                        to: squareName,
+                      );
+                    }
+
+                    if (game.turn != moveColor) {
+                      widget.onMove?.call();
+                    } else {
+                      availableMovesCanBeShowed = true;
+                    }
+                    selectedPieceMoveData = pieceMoveData;
+                  });
+                  return dragTarget;
+                },
+                itemCount: 64,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
               ),
               if (widget.arrows.isNotEmpty)
-                IgnorePointer(
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: CustomPaint(
-                      child: Container(),
-                      painter:
-                          _ArrowPainter(widget.arrows, widget.boardOrientation),
+                Container(
+                  margin: EdgeInsets.only(top: 25),
+                  child: IgnorePointer(
+                    child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: CustomPaint(
+                        child: Container(),
+                        painter: _ArrowPainter(
+                            widget.arrows, widget.boardOrientation),
+                      ),
                     ),
                   ),
                 ),
               if (availableMovesCanBeShowed == true)
-                IgnorePointer(
-                    child: AspectRatio(
-                  aspectRatio: 1.0,
-                  child: CustomPaint(
-                    child: Container(),
-                    painter: _AvailableMovesPainter(
-                      widget.controller.getPossibleMoves(),
-                      widget.boardOrientation,
-                      selectedPieceMoveData,
-                    ),
-                  ),
-                ))
+                Container(
+                    margin: EdgeInsets.only(top: 25),
+                    child: IgnorePointer(
+                        child: AspectRatio(
+                      aspectRatio: 1.0,
+                      child: CustomPaint(
+                        child: Container(),
+                        painter: _AvailableMovesPainter(
+                          widget.controller.getPossibleMoves(),
+                          widget.boardOrientation,
+                          selectedPieceMoveData,
+                        ),
+                      ),
+                    ))),
             ],
           ),
         );
